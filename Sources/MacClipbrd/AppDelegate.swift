@@ -39,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "doc.on.clipboard",
-                                   accessibilityDescription: "Multibuf")
+                                   accessibilityDescription: "MacClipbrd")
             button.action = #selector(toggleFromStatusItem)
             button.target = self
         }
@@ -135,9 +135,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func promptAccessibility(pasteFallbackHint: Bool) {
         let alert = NSAlert()
         alert.messageText = "Автовставка выключена"
-        var text = "Чтобы Multibuf вставлял выбранную запись сам, разрешите его в "
+        var text = "Чтобы MacClipbrd вставлял выбранную запись сам, разрешите его в "
             + "Системных настройках → Конфиденциальность и безопасность → Универсальный доступ.\n\n"
-            + "Если Multibuf уже есть в списке и переключатель включён — выключите и включите его "
+            + "Если MacClipbrd уже есть в списке и переключатель включён — выключите и включите его "
             + "снова: после обновления macOS считает приложение новым."
         if pasteFallbackHint {
             text = "Текст скопирован в буфер — нажмите ⌘V, чтобы вставить.\n\n" + text

@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Multibuf</string>
+    <string>MacClipbrd</string>
     <key>CFBundleDisplayName</key>
-    <string>Multibuf</string>
+    <string>MacClipbrd</string>
     <key>CFBundleIdentifier</key>
-    <string>com.multibuf.app</string>
+    <string>com.macclipbrd.app</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleExecutable</key>
-    <string>Multibuf</string>
+    <string>MacClipbrd</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
@@ -21,6 +21,6 @@
     <key>LSUIElement</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>Multibuf</string>
+    <string>MacClipbrd</string>
 </dict>
 </plist>

@@ -5,11 +5,11 @@ CONFIG="${1:-release}"
 # Stable signing identity. Create once in Keychain Access:
 #   Certificate Assistant → Create a Certificate → Self-Signed Root, Code Signing.
 # Override with: SIGN_IDENTITY="Apple Development: you@example.com" ./build-app.sh
-SIGN_IDENTITY="${SIGN_IDENTITY:-Multibuf Dev}"
+SIGN_IDENTITY="${SIGN_IDENTITY:-MacClipbrd Dev}"
 
-APP="Multibuf.app"
-BIN=".build/$CONFIG/Multibuf"
-BUNDLE_ID="com.multibuf.app"
+APP="MacClipbrd.app"
+BIN=".build/$CONFIG/MacClipbrd"
+BUNDLE_ID="com.macclipbrd.app"
 
 echo "Building ($CONFIG)…"
 swift build -c "$CONFIG"
@@ -18,7 +18,7 @@ echo "Packaging $APP…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/Multibuf"
+cp "$BIN" "$APP/Contents/MacOS/MacClipbrd"
 cp Info.plist "$APP/Contents/Info.plist"
 
 # --deep is deprecated and signs nested code with the wrong flags; this bundle has

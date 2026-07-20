@@ -5,7 +5,7 @@
 Package.resolved
 
 # Built app bundle — produced by build-app.sh
-Multibuf.app/
+MacClipbrd.app/
 *.dmg
 *.zip
 

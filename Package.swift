@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Multibuf",
+    name: "MacClipbrd",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "Multibuf",
-            path: "Sources/Multibuf"
+            name: "MacClipbrd",
+            path: "Sources/MacClipbrd"
         )
     ]
 )

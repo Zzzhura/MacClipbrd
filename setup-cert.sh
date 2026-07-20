@@ -1,13 +1,13 @@
 #!/bin/bash
-# Creates a stable self-signed Code Signing certificate "Multibuf Dev" in the
+# Creates a stable self-signed Code Signing certificate "MacClipbrd Dev" in the
 # login keychain and trusts it for code signing. Run once. Signing with this
 # identity keeps a stable app identity across rebuilds, so macOS remembers the
 # Accessibility permission and stops re-prompting.
 set -e
 
-NAME="Multibuf Dev"
-PW="multibuf"
-DIR="$HOME/Library/Application Support/Multibuf"
+NAME="MacClipbrd Dev"
+PW="macclipbrd"
+DIR="$HOME/Library/Application Support/MacClipbrd"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 mkdir -p "$DIR"
 
@@ -34,9 +34,9 @@ openssl pkcs12 -export -legacy \
 echo "Importing into login keychain…"
 security import "$TMP/cert.p12" -k "$KEYCHAIN" -P "$PW" -A >/dev/null
 
-cp "$TMP/cert.pem" "$DIR/MultibufDev.cer"
+cp "$TMP/cert.pem" "$DIR/MacClipbrdDev.cer"
 echo "Trusting for code signing (может появиться окно с паролем)…"
-security add-trusted-cert -p codeSign -k "$KEYCHAIN" "$DIR/MultibufDev.cer"
+security add-trusted-cert -p codeSign -k "$KEYCHAIN" "$DIR/MacClipbrdDev.cer"
 
 echo
 security find-identity -p codesigning | grep "$NAME" && echo "OK: identity ready."
