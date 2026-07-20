@@ -56,6 +56,7 @@ final class HistoryViewModel: ObservableObject {
 struct HistoryView: View {
     @ObservedObject var store: HistoryStore
     @ObservedObject var vm: HistoryViewModel
+    @ObservedObject private var loc = Localization.shared
 
     @FocusState private var searchFocused: Bool
 
@@ -93,7 +94,7 @@ struct HistoryView: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Поиск…", text: $vm.query)
+            TextField(loc.searchPlaceholder, text: $vm.query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
             if !vm.query.isEmpty {
@@ -136,7 +137,7 @@ struct HistoryView: View {
             Image(systemName: "doc.on.clipboard")
                 .font(.largeTitle)
                 .foregroundStyle(.tertiary)
-            Text(store.items.isEmpty ? "История пуста" : "Ничего не найдено")
+            Text(store.items.isEmpty ? loc.emptyHistory : loc.nothingFound)
                 .foregroundStyle(.secondary)
             Spacer()
         }
@@ -145,11 +146,13 @@ struct HistoryView: View {
 
     private var footer: some View {
         HStack {
-            Text("\(store.items.count) элем.")
+            Text(loc.itemCount(store.items.count))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("Очистить") { store.clear() }
+            languagePicker
+            Spacer()
+            Button(loc.clear) { store.clear() }
                 .buttonStyle(.plain)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -157,6 +160,18 @@ struct HistoryView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
+    }
+
+    private var languagePicker: some View {
+        Picker("", selection: $loc.language) {
+            ForEach(Language.allCases) { lang in
+                Text(lang.label).tag(lang)
+            }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.mini)
+        .labelsHidden()
+        .frame(width: 76)
     }
 
 }
@@ -167,6 +182,7 @@ private struct ClipRow: View {
     let onSelect: () -> Void
     let onDelete: () -> Void
 
+    @ObservedObject private var loc = Localization.shared
     @State private var hovering = false
 
     var body: some View {
@@ -200,7 +216,7 @@ private struct ClipRow: View {
                 .foregroundStyle(titleColor)
         case .image(let ref):
             media(icon: NSImage(contentsOf: ref.thumbnailURL),
-                  title: "Изображение",
+                  title: loc.image,
                   detail: "\(ref.width)×\(ref.height)")
         case .files(let urls):
             media(icon: NSWorkspace.shared.icon(forFile: urls[0].path),
@@ -235,7 +251,7 @@ private struct ClipRow: View {
             $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
         }
         let size = bytes > 0 ? ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) : nil
-        let count = urls.count > 1 ? "\(urls.count) элем." : nil
+        let count = urls.count > 1 ? loc.itemCount(urls.count) : nil
         return [count, size].compactMap { $0 }.joined(separator: " · ")
     }
 

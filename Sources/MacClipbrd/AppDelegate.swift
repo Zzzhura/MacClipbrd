@@ -142,18 +142,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func promptAccessibility(pasteFallbackHint: Bool) {
+        let loc = Localization.shared
         let alert = NSAlert()
-        alert.messageText = "Автовставка выключена"
-        var text = "Чтобы MacClipbrd вставлял выбранную запись сам, разрешите его в "
-            + "Системных настройках → Конфиденциальность и безопасность → Универсальный доступ.\n\n"
-            + "Если MacClipbrd уже есть в списке и переключатель включён — выключите и включите его "
-            + "снова: после обновления macOS считает приложение новым."
+        alert.messageText = loc.accessibilityAlertTitle
+        var text = loc.accessibilityAlertBody
         if pasteFallbackHint {
-            text = "Запись скопирована в буфер — нажмите ⌘V, чтобы вставить.\n\n" + text
+            text = loc.pasteFallbackHint + text
         }
         alert.informativeText = text
-        alert.addButton(withTitle: "Открыть настройки")
-        alert.addButton(withTitle: "Позже")
+        alert.addButton(withTitle: loc.openSettings)
+        alert.addButton(withTitle: loc.later)
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn {
             let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
