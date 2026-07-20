@@ -20,7 +20,7 @@ extension ClipContent: Equatable {
 
 struct ClipItem: Identifiable, Codable, Equatable {
     let id: UUID
-    let content: ClipContent
+    var content: ClipContent
     let date: Date
 
     init(content: ClipContent, date: Date = Date()) {
@@ -75,7 +75,8 @@ final class HistoryStore: ObservableObject {
 
     init() {
         fileURL = Self.supportDirectory.appendingPathComponent("history.json")
-        load()
+        // A history we failed to read is not evidence that its assets are orphans.
+        if load() { collectGarbage() }
     }
 
     func add(_ payload: ClipboardPayload) {
@@ -95,51 +96,69 @@ final class HistoryStore: ObservableObject {
             guard !refs.isEmpty else { return }
             // Describe first: copying before the dedup check would orphan the copies.
             if case .files(let stored) = items.first?.content, stored == refs { return }
-            insert(.files(refs.map(FileStore.store)))
+            insert(.files(refs))
+            copyAssets(for: refs)
         }
     }
 
     func remove(_ item: ClipItem) {
         items.removeAll { $0.id == item.id }
-        discardAssets(of: [item])
         save()
     }
 
     func clear() {
-        let dropped = items
         items.removeAll()
-        discardAssets(of: dropped)
         save()
     }
 
     private func insert(_ content: ClipContent) {
         if items.first?.content == content { return }
-        let duplicates = items.filter { $0.content == content }
         items.removeAll { $0.content == content }
-        discardAssets(of: duplicates)
         items.insert(ClipItem(content: content), at: 0)
         if items.count > maxItems {
-            let overflow = items.count - maxItems
-            discardAssets(of: Array(items.suffix(overflow)))
-            items.removeLast(overflow)
+            items.removeLast(items.count - maxItems)
         }
         save()
     }
 
-    private func discardAssets(of items: [ClipItem]) {
-        for item in items {
-            switch item.content {
-            case .image(let ref): ImageStore.delete(ref)
-            case .files(let refs): refs.forEach(FileStore.delete)
-            case .text: break
+    /// The entry lands immediately as a plain reference and is upgraded once the
+    /// copy exists: a large file on a slow volume would otherwise freeze the app,
+    /// since the pasteboard is polled on the main run loop.
+    private func copyAssets(for refs: [FileRef]) {
+        guard let id = items.first?.id else { return }
+        DispatchQueue.global(qos: .utility).async {
+            let stored = refs.map(FileStore.store)
+            DispatchQueue.main.async {
+                guard let index = self.items.firstIndex(where: { $0.id == id }) else { return }
+                self.items[index].content = .files(stored)
+                self.save()
             }
         }
     }
 
-    private func load() {
+    /// Assets outlive the entry that referenced them and are swept at the next
+    /// launch instead: a file pasted into an upload may still be read from our
+    /// copy long after dedup or trimming dropped its entry.
+    private func collectGarbage() {
+        var images: Set<String> = []
+        var files: Set<String> = []
+        for item in items {
+            switch item.content {
+            case .text: break
+            case .image(let ref): images.formUnion([ref.fileName, ref.thumbnailName])
+            case .files(let refs): files.formUnion(refs.compactMap(\.storage))
+            }
+        }
+        ImageStore.removeAll(except: images)
+        FileStore.removeAll(except: files)
+    }
+
+    private func load() -> Bool {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return true }
         guard let data = try? Data(contentsOf: fileURL),
-              let decoded = try? JSONDecoder().decode([ClipItem].self, from: data) else { return }
+              let decoded = try? JSONDecoder().decode([ClipItem].self, from: data) else { return false }
         items = decoded
+        return true
     }
 
     private func save() {

@@ -50,9 +50,11 @@ enum ImageStore {
                         height: rep.pixelsHigh)
     }
 
-    static func delete(_ ref: ImageRef) {
-        try? FileManager.default.removeItem(at: ref.url)
-        try? FileManager.default.removeItem(at: ref.thumbnailURL)
+    static func removeAll(except keep: Set<String>) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for name in names where !keep.contains(name) {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+        }
     }
 
     private static func thumbnail(of image: NSImage) -> Data? {

@@ -93,9 +93,10 @@ enum FileStore {
                        storage: storage)
     }
 
-    static func delete(_ ref: FileRef) {
-        guard let storage = ref.storage else { return }
-        try? FileManager.default.removeItem(at: directory.appendingPathComponent(storage,
-                                                                                 isDirectory: true))
+    static func removeAll(except keep: Set<String>) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for name in names where !keep.contains(name) {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+        }
     }
 }
