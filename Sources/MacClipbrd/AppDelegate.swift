@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = HistoryStore()
     private lazy var vm = HistoryViewModel(store: store)
     private var monitor: ClipboardMonitor!
+    private var screenshots: ScreenshotWatcher!
     private var hotKey: HotKey?
     private var keyMonitor: Any?
     private var cursorPanel: CursorPanel?
@@ -27,6 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.store.add(payload)
         }
         monitor.start()
+
+        screenshots = ScreenshotWatcher { [weak self] data in
+            self?.store.add(.image(data))
+        }
+        screenshots.start()
 
         hotKey = HotKey { [weak self] in
             self?.toggleCursorPanel()

@@ -20,6 +20,8 @@
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>MacClipbrd reads new screenshots from the folder they are saved to so they appear in your clipboard history.</string>
     <key>NSHumanReadableCopyright</key>
     <string>MacClipbrd</string>
 </dict>
