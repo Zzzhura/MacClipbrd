@@ -1,14 +1,20 @@
 import AppKit
 
+enum ClipboardPayload {
+    case text(String)
+    case image(Data)
+    case files([URL])
+}
+
 final class ClipboardMonitor {
     private let pasteboard = NSPasteboard.general
     private var lastChangeCount: Int
     private var timer: Timer?
-    private let onChange: (String) -> Void
+    private let onChange: (ClipboardPayload) -> Void
 
     var ignoreNextChange = false
 
-    init(onChange: @escaping (String) -> Void) {
+    init(onChange: @escaping (ClipboardPayload) -> Void) {
         self.onChange = onChange
         self.lastChangeCount = pasteboard.changeCount
     }
@@ -37,7 +43,26 @@ final class ClipboardMonitor {
             ignoreNextChange = false
             return
         }
-        guard let text = pasteboard.string(forType: .string) else { return }
-        onChange(text)
+        guard let payload = readPayload() else { return }
+        onChange(payload)
+    }
+
+    /// Copies carry several flavours at once — a Finder copy also puts the paths
+    /// on as text — so the richest one wins.
+    private func readPayload() -> ClipboardPayload? {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL],
+           !urls.isEmpty {
+            return .files(urls)
+        }
+        for type in [NSPasteboard.PasteboardType.png, .tiff] {
+            if let data = pasteboard.data(forType: type) {
+                return .image(data)
+            }
+        }
+        if let text = pasteboard.string(forType: .string) {
+            return .text(text)
+        }
+        return nil
     }
 }

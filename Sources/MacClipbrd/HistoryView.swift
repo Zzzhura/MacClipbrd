@@ -31,7 +31,7 @@ final class HistoryViewModel: ObservableObject {
 
     var filtered: [ClipItem] {
         guard !query.isEmpty else { return store.items }
-        return store.items.filter { $0.text.localizedCaseInsensitiveContains(query) }
+        return store.items.filter { $0.searchText.localizedCaseInsensitiveContains(query) }
     }
 
     var selectedItem: ClipItem? {
@@ -171,10 +171,7 @@ private struct ClipRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Text(item.text)
-                .lineLimit(3)
-                .font(.system(size: 13))
-                .foregroundStyle(selected ? Color.white : Color.primary)
+            content
                 .frame(maxWidth: .infinity, alignment: .leading)
             if hovering {
                 Button {
@@ -192,6 +189,58 @@ private struct ClipRow: View {
         .background(background)
         .onHover { hovering = $0 }
         .onTapGesture { onSelect() }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch item.content {
+        case .text(let text):
+            Text(text)
+                .lineLimit(3)
+                .font(.system(size: 13))
+                .foregroundStyle(titleColor)
+        case .image(let ref):
+            media(icon: NSImage(contentsOf: ref.thumbnailURL),
+                  title: "Изображение",
+                  detail: "\(ref.width)×\(ref.height)")
+        case .files(let urls):
+            media(icon: NSWorkspace.shared.icon(forFile: urls[0].path),
+                  title: urls.map(\.lastPathComponent).joined(separator: ", "),
+                  detail: detail(for: urls))
+        }
+    }
+
+    private func media(icon: NSImage?, title: String, detail: String) -> some View {
+        HStack(spacing: 8) {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .font(.system(size: 13))
+                    .foregroundStyle(titleColor)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(selected ? Color.white.opacity(0.8) : Color.secondary)
+            }
+        }
+    }
+
+    private func detail(for urls: [URL]) -> String {
+        let bytes = urls.reduce(Int64(0)) {
+            $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+        }
+        let size = bytes > 0 ? ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) : nil
+        let count = urls.count > 1 ? "\(urls.count) элем." : nil
+        return [count, size].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    private var titleColor: Color {
+        selected ? Color.white : Color.primary
     }
 
     private var background: Color {

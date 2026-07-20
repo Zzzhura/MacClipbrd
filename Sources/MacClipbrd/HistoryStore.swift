@@ -1,53 +1,134 @@
 import Foundation
 import Combine
 
+enum ClipContent: Codable {
+    case text(String)
+    case image(ImageRef)
+    case files([URL])
+}
+
+extension ClipContent: Equatable {
+    static func == (lhs: ClipContent, rhs: ClipContent) -> Bool {
+        switch (lhs, rhs) {
+        case let (.text(l), .text(r)): return l == r
+        case let (.image(l), .image(r)): return l.hash == r.hash
+        case let (.files(l), .files(r)): return l == r
+        default: return false
+        }
+    }
+}
+
 struct ClipItem: Identifiable, Codable, Equatable {
     let id: UUID
-    let text: String
+    let content: ClipContent
     let date: Date
 
-    init(text: String, date: Date = Date()) {
+    init(content: ClipContent, date: Date = Date()) {
         self.id = UUID()
-        self.text = text
+        self.content = content
         self.date = date
+    }
+
+    var searchText: String {
+        switch content {
+        case .text(let text): return text
+        case .image: return ""
+        case .files(let urls): return urls.map(\.lastPathComponent).joined(separator: " ")
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, content, date
+    }
+
+    // Histories written before media support have a bare `text` field instead.
+    private enum LegacyKeys: String, CodingKey {
+        case text
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        date = try container.decode(Date.self, forKey: .date)
+        if let content = try container.decodeIfPresent(ClipContent.self, forKey: .content) {
+            self.content = content
+        } else {
+            let legacy = try decoder.container(keyedBy: LegacyKeys.self)
+            self.content = .text(try legacy.decode(String.self, forKey: .text))
+        }
     }
 }
 
 final class HistoryStore: ObservableObject {
     @Published private(set) var items: [ClipItem] = []
 
-    private let maxItems = 200
-    private let fileURL: URL
-
-    init() {
+    static let supportDirectory: URL = {
         let dir = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MacClipbrd", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        fileURL = dir.appendingPathComponent("history.json")
+        return dir
+    }()
+
+    private let maxItems = 200
+    private let fileURL: URL
+
+    init() {
+        fileURL = Self.supportDirectory.appendingPathComponent("history.json")
         load()
     }
 
-    func add(_ text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        if items.first?.text == text { return }
-        items.removeAll { $0.text == text }
-        items.insert(ClipItem(text: text), at: 0)
-        if items.count > maxItems {
-            items.removeLast(items.count - maxItems)
+    func add(_ payload: ClipboardPayload) {
+        switch payload {
+        case .text(let text):
+            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            insert(.text(text))
+        case .image(let data):
+            guard let png = ImageStore.pngData(from: data) else { return }
+            let hash = ImageStore.hash(png)
+            // Hash first: writing the file before the dedup check would orphan it.
+            if case .image(let ref) = items.first?.content, ref.hash == hash { return }
+            guard let ref = ImageStore.store(png: png, hash: hash) else { return }
+            insert(.image(ref))
+        case .files(let urls):
+            guard !urls.isEmpty else { return }
+            insert(.files(urls))
         }
-        save()
     }
 
     func remove(_ item: ClipItem) {
         items.removeAll { $0.id == item.id }
+        discardAssets(of: [item])
         save()
     }
 
     func clear() {
+        let dropped = items
         items.removeAll()
+        discardAssets(of: dropped)
         save()
+    }
+
+    private func insert(_ content: ClipContent) {
+        if items.first?.content == content { return }
+        let duplicates = items.filter { $0.content == content }
+        items.removeAll { $0.content == content }
+        discardAssets(of: duplicates)
+        items.insert(ClipItem(content: content), at: 0)
+        if items.count > maxItems {
+            let overflow = items.count - maxItems
+            discardAssets(of: Array(items.suffix(overflow)))
+            items.removeLast(overflow)
+        }
+        save()
+    }
+
+    private func discardAssets(of items: [ClipItem]) {
+        for item in items {
+            if case .image(let ref) = item.content {
+                ImageStore.delete(ref)
+            }
+        }
     }
 
     private func load() {

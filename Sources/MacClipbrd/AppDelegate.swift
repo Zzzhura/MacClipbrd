@@ -23,8 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         setupKeyMonitor()
 
-        monitor = ClipboardMonitor { [weak self] text in
-            self?.store.add(text)
+        monitor = ClipboardMonitor { [weak self] payload in
+            self?.store.add(payload)
         }
         monitor.start()
 
@@ -80,7 +80,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let pb = NSPasteboard.general
         monitor.ignoreNextChange = true
         pb.clearContents()
-        pb.setString(item.text, forType: .string)
+        switch item.content {
+        case .text(let text):
+            pb.setString(text, forType: .string)
+        case .image(let ref):
+            if let image = NSImage(contentsOf: ref.url) {
+                pb.writeObjects([image])
+            }
+        case .files(let urls):
+            pb.writeObjects(urls as [NSURL])
+        }
 
         cursorPanel?.close()
         cursorPanel = nil
@@ -88,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Return focus to the app that was frontmost, then paste into it.
         previousApp?.activate()
 
-        // Without Accessibility the text is still on the pasteboard, so the user
+        // Without Accessibility the entry is still on the pasteboard, so the user
         // can press ⌘V themselves — degrade quietly instead of blocking.
         guard AXIsProcessTrusted() else {
             warnAccessibilityOnce()
@@ -140,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             + "Если MacClipbrd уже есть в списке и переключатель включён — выключите и включите его "
             + "снова: после обновления macOS считает приложение новым."
         if pasteFallbackHint {
-            text = "Текст скопирован в буфер — нажмите ⌘V, чтобы вставить.\n\n" + text
+            text = "Запись скопирована в буфер — нажмите ⌘V, чтобы вставить.\n\n" + text
         }
         alert.informativeText = text
         alert.addButton(withTitle: "Открыть настройки")
