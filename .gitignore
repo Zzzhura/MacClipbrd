@@ -1,0 +1,25 @@
+.DS_Store
+
+# SwiftPM build products
+.build/
+Package.resolved
+
+# Built app bundle — produced by build-app.sh
+Multibuf.app/
+*.dmg
+*.zip
+
+# Xcode / SwiftPM local state
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+
+# Local tool state
+.claude/
+CLAUDE.md
+
+# Signing material — never commit private keys or certificates
+*.p12
+*.cer
+*.pem
+*.provisionprofile
