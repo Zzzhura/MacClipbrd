@@ -6,13 +6,28 @@ Clipboard history manager for macOS — the Win+V equivalent.
 
 ## Features
 
-- Records everything you copy (text). Last 200 entries, duplicates collapse to the top.
+- Records everything you copy — **text, images and files**. Last 200 entries,
+  duplicates collapse to the top.
+- Images show as a thumbnail with their pixel dimensions. Files show the system
+  icon for their type, the file name and the size; a multi-file copy shows the
+  file count and the combined size.
 - Two ways to open: hotkey **⌥⌘V** (window at the cursor) or a click on the menu bar icon (window below the icon).
-- Search — just start typing, the search field is already focused.
+- Search — just start typing, the search field is already focused. Matches text
+  entries and file names.
 - Keyboard control: **↑ / ↓** to select, **Enter** to paste, **Esc** to close.
 - Mouse: click an entry to paste it, hover for the trash icon to delete it.
-- The selected entry is copied to the clipboard and pasted into the app you came from (simulated ⌘V).
+- The selected entry is copied to the clipboard and pasted into the app you came
+  from (simulated ⌘V), in its original form — an image pastes as an image, a file
+  pastes as a file.
+- **English and Russian**, switchable from the panel footer. English is the
+  default; the choice persists and applies immediately.
 - History survives restarts: `~/Library/Application Support/MacClipbrd/history.json`.
+  Copied images are kept as separate files under `MacClipbrd/Images/` and are
+  deleted when the entry drops out of the history, so the JSON stays small.
+
+When several formats are on the clipboard at once, files win over images and
+images win over text. Apps that copy both an image and its text representation
+(Keynote, parts of Office) are therefore recorded as an image.
 
 Requirements: **macOS 13+**, Apple Silicon or Intel.
 
@@ -152,9 +167,11 @@ MDM-managed machines, where it is deployed via a PPPC profile with
 
 - `main.swift` — entry point, `NSApplication` in accessory mode.
 - `AppDelegate.swift` — menu bar item, panel presentation, pasting.
-- `ClipboardMonitor.swift` — `NSPasteboard` polling (0.5 s).
-- `HistoryStore.swift` — history model and persistence.
+- `ClipboardMonitor.swift` — `NSPasteboard` polling (0.5 s), flavour selection.
+- `HistoryStore.swift` — `ClipItem` model and persistence.
+- `ImageStore.swift` — image files and thumbnails on disk.
 - `HistoryView.swift` — SwiftUI interface, search and keyboard selection.
+- `Localization.swift` — English/Russian string table.
 - `CursorPanel.swift` — history window (at the cursor or below the menu bar icon).
 - `HotKey.swift` — global hotkey via Carbon.
 
