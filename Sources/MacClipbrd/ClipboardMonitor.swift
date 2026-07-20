@@ -55,10 +55,14 @@ final class ClipboardMonitor {
            !urls.isEmpty {
             return .files(urls)
         }
-        for type in [NSPasteboard.PasteboardType.png, .tiff] {
-            if let data = pasteboard.data(forType: type) {
-                return .image(data)
-            }
+        // Apps offer wildly different flavours (JPEG, HEIC, PDF from vector apps),
+        // so fall back to anything NSImage can decode once the two cheap bitmap
+        // flavours are ruled out.
+        let imageTypes = [NSPasteboard.PasteboardType.png, .tiff]
+            + NSImage.imageTypes.map(NSPasteboard.PasteboardType.init(rawValue:))
+        if let type = pasteboard.availableType(from: imageTypes),
+           let data = pasteboard.data(forType: type) {
+            return .image(data)
         }
         if let text = pasteboard.string(forType: .string) {
             return .text(text)

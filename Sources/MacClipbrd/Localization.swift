@@ -39,6 +39,8 @@ final class Localization: ObservableObject {
     var nothingFound: String { t("Nothing found", "Ничего не найдено") }
     var clear: String { t("Clear", "Очистить") }
     var image: String { t("Image", "Изображение") }
+    var folder: String { t("Folder", "Папка") }
+    var linkOnly: String { t("link only", "только ссылка") }
 
     func itemCount(_ count: Int) -> String {
         t(count == 1 ? "1 item" : "\(count) items", "\(count) элем.")

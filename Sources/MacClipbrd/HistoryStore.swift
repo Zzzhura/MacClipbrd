@@ -4,7 +4,7 @@ import Combine
 enum ClipContent: Codable {
     case text(String)
     case image(ImageRef)
-    case files([URL])
+    case files([FileRef])
 }
 
 extension ClipContent: Equatable {
@@ -33,7 +33,7 @@ struct ClipItem: Identifiable, Codable, Equatable {
         switch content {
         case .text(let text): return text
         case .image: return ""
-        case .files(let urls): return urls.map(\.lastPathComponent).joined(separator: " ")
+        case .files(let refs): return refs.map(\.name).joined(separator: " ")
         }
     }
 
@@ -91,8 +91,11 @@ final class HistoryStore: ObservableObject {
             guard let ref = ImageStore.store(png: png, hash: hash) else { return }
             insert(.image(ref))
         case .files(let urls):
-            guard !urls.isEmpty else { return }
-            insert(.files(urls))
+            let refs = urls.compactMap(FileStore.describe)
+            guard !refs.isEmpty else { return }
+            // Describe first: copying before the dedup check would orphan the copies.
+            if case .files(let stored) = items.first?.content, stored == refs { return }
+            insert(.files(refs.map(FileStore.store)))
         }
     }
 
@@ -125,8 +128,10 @@ final class HistoryStore: ObservableObject {
 
     private func discardAssets(of items: [ClipItem]) {
         for item in items {
-            if case .image(let ref) = item.content {
-                ImageStore.delete(ref)
+            switch item.content {
+            case .image(let ref): ImageStore.delete(ref)
+            case .files(let refs): refs.forEach(FileStore.delete)
+            case .text: break
             }
         }
     }

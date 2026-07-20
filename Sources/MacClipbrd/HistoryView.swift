@@ -218,10 +218,10 @@ private struct ClipRow: View {
             media(icon: NSImage(contentsOf: ref.thumbnailURL),
                   title: loc.image,
                   detail: "\(ref.width)×\(ref.height)")
-        case .files(let urls):
-            media(icon: NSWorkspace.shared.icon(forFile: urls[0].path),
-                  title: urls.map(\.lastPathComponent).joined(separator: ", "),
-                  detail: detail(for: urls))
+        case .files(let refs):
+            media(icon: NSWorkspace.shared.icon(forFile: refs[0].iconPath),
+                  title: refs.map(\.name).joined(separator: ", "),
+                  detail: detail(for: refs))
         }
     }
 
@@ -246,13 +246,13 @@ private struct ClipRow: View {
         }
     }
 
-    private func detail(for urls: [URL]) -> String {
-        let bytes = urls.reduce(Int64(0)) {
-            $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
-        }
+    private func detail(for refs: [FileRef]) -> String {
+        let bytes = refs.reduce(Int64(0)) { $0 + $1.size }
         let size = bytes > 0 ? ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) : nil
-        let count = urls.count > 1 ? loc.itemCount(urls.count) : nil
-        return [count, size].compactMap { $0 }.joined(separator: " · ")
+        let count = refs.count > 1 ? loc.itemCount(refs.count) : nil
+        let folder = refs.contains(where: \.isDirectory) ? loc.folder : nil
+        let link = refs.contains { !$0.isStored } ? loc.linkOnly : nil
+        return [count, size, folder, link].compactMap { $0 }.joined(separator: " · ")
     }
 
     private var titleColor: Color {

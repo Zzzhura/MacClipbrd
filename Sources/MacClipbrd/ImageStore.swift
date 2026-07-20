@@ -22,7 +22,12 @@ enum ImageStore {
     /// Everything is normalised to PNG so the pasteboard flavour the image came
     /// in with (TIFF, PDF-backed, …) does not leak into the stored file name.
     static func pngData(from data: Data) -> Data? {
-        NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:])
+        if let rep = NSBitmapImageRep(data: data) {
+            return rep.representation(using: .png, properties: [:])
+        }
+        // Vector flavours (PDF, EPS) have no bitmap rep until NSImage rasterises them.
+        guard let image = NSImage(data: data), let tiff = image.tiffRepresentation else { return nil }
+        return NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:])
     }
 
     static func hash(_ data: Data) -> String {

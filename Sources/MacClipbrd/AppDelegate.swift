@@ -93,8 +93,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let image = NSImage(contentsOf: ref.url) {
                 pb.writeObjects([image])
             }
-        case .files(let urls):
-            pb.writeObjects(urls as [NSURL])
+        case .files(let refs):
+            let urls = refs.map(\.url).filter { FileManager.default.fileExists(atPath: $0.path) }
+            if !urls.isEmpty {
+                writeFiles(urls, to: pb)
+            }
         }
 
         cursorPanel?.close()
@@ -112,6 +115,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             self.simulatePaste()
         }
+    }
+
+    /// One item per file carrying public.file-url, plus the legacy filenames plist
+    /// that browsers and Electron apps read to turn a paste into an upload. AppKit
+    /// only synthesises that flavour on demand, and readers that enumerate the
+    /// items rather than asking the pasteboard never trigger it.
+    private func writeFiles(_ urls: [URL], to pb: NSPasteboard) {
+        pb.writeObjects(urls.map { url in
+            let item = NSPasteboardItem()
+            item.setString(url.absoluteString, forType: .fileURL)
+            return item
+        })
+        pb.setPropertyList(urls.map(\.path),
+                           forType: NSPasteboard.PasteboardType("NSFilenamesPboardType"))
     }
 
     private func simulatePaste() {
