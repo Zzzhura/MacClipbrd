@@ -46,9 +46,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "doc.on.clipboard",
                                    accessibilityDescription: "MacClipbrd")
-            button.action = #selector(toggleFromStatusItem)
+            button.action = #selector(statusItemClicked)
             button.target = self
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
+    }
+
+    @objc private func statusItemClicked() {
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            showContextMenu()
+        } else {
+            toggleFromStatusItem()
+        }
+    }
+
+    private func showContextMenu() {
+        let loc = Localization.shared
+        let menu = NSMenu()
+        let open = menu.addItem(withTitle: loc.openHistory,
+                                action: #selector(openHistoryFromMenu), keyEquivalent: "")
+        open.target = self
+        menu.addItem(.separator())
+        let quit = menu.addItem(withTitle: loc.quit,
+                                action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.target = NSApp
+        // Assigning the menu makes the next click open it; clear it afterwards so
+        // left-clicks keep toggling the panel instead of showing the menu.
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+        statusItem.menu = nil
+    }
+
+    @objc private func openHistoryFromMenu() {
+        if isShowingHistory { return }
+        toggleFromStatusItem()
     }
 
     private func setupKeyMonitor() {
@@ -103,8 +134,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cursorPanel?.close()
         cursorPanel = nil
 
-        // Return focus to the app that was frontmost, then paste into it.
-        previousApp?.activate()
+        // Return focus to the app that was frontmost, then paste into it. Since
+        // macOS 14 activation is cooperative: our agent app must yield first or
+        // the target never comes forward and the synthetic ⌘V lands nowhere.
+        if let previousApp {
+            if #available(macOS 14.0, *) {
+                NSApp.yieldActivation(to: previousApp)
+            }
+            previousApp.activate()
+        }
 
         // Without Accessibility the entry is still on the pasteboard, so the user
         // can press ⌘V themselves — degrade quietly instead of blocking.
@@ -112,7 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             warnAccessibilityOnce()
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             self.simulatePaste()
         }
     }

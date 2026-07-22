@@ -68,4 +68,6 @@ final class Localization: ObservableObject {
 
     var openSettings: String { t("Open Settings", "Открыть настройки") }
     var later: String { t("Later", "Позже") }
+    var openHistory: String { t("Open History", "Открыть историю") }
+    var quit: String { t("Quit MacClipbrd", "Выйти из MacClipbrd") }
 }

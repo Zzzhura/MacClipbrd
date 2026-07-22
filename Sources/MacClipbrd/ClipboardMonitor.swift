@@ -25,11 +25,6 @@ final class ClipboardMonitor {
         }
     }
 
-    func stop() {
-        timer?.invalidate()
-        timer = nil
-    }
-
     /// Pulls in anything copied since the last tick, so the history is current
     /// the moment the panel opens rather than up to a poll interval stale.
     func pollNow() {

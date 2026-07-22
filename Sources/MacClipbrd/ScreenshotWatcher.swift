@@ -28,11 +28,6 @@ final class ScreenshotWatcher {
         self.source = source
     }
 
-    func stop() {
-        source?.cancel()
-        source = nil
-    }
-
     private func scan() {
         let names = Self.imageNames(in: directory)
         let added = names.subtracting(seen)
