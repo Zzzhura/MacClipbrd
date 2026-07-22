@@ -9,6 +9,13 @@ MacClipbrd.app/
 *.dmg
 *.zip
 
+# Local release-artifacts export (duplicate of Assets/)
+macclipbrd-artifacts-*/
+
+# Icon compiled from Assets/icon_1024.png by generate-icns.sh
+AppIcon.icns
+AppIcon.iconset/
+
 # Xcode / SwiftPM local state
 .swiftpm/
 *.xcuserstate

@@ -1,6 +1,19 @@
+<div align="center">
+
+<img src="Assets/icon_1024.png" width="128" alt="MacClipbrd icon">
+
 # MacClipbrd
 
-Clipboard history manager for macOS — the Win+V equivalent.
+**Clipboard history manager for macOS — the Win+V equivalent.**
+
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white)
+![Universal](https://img.shields.io/badge/Apple%20Silicon%20%26%20Intel-universal-555555)
+![SwiftUI](https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2A6DB0)](LICENSE)
+
+<img src="Assets/banner.png" width="820" alt="MacClipbrd clipboard history panel">
+
+</div>
 
 ---
 

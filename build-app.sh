@@ -14,12 +14,20 @@ BUNDLE_ID="com.macclipbrd.app"
 echo "Building ($CONFIG)…"
 swift build -c "$CONFIG"
 
+# Icon is keyed by CFBundleIconFile=AppIcon in Info.plist; regenerate from the
+# 1024px source if it hasn't been built yet.
+if [ ! -f "AppIcon.icns" ]; then
+    echo "AppIcon.icns not found — generating from Assets/icon_1024.png…"
+    ./generate-icns.sh
+fi
+
 echo "Packaging $APP…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/MacClipbrd"
 cp Info.plist "$APP/Contents/Info.plist"
+cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 # --deep is deprecated and signs nested code with the wrong flags; this bundle has
 # no nested code, so sign it directly. --timestamp is required for notarization.
@@ -39,6 +47,20 @@ echo
 echo "Designated requirement (должен совпадать у всех версий):"
 codesign -d -r- "$APP" 2>&1 | sed -n 's/^designated => /  /p'
 
+# If a previous build is running, quit it and launch the freshly built bundle so
+# the user is always testing the current binary.
+if pgrep -x MacClipbrd >/dev/null; then
+    echo "Quitting running MacClipbrd…"
+    osascript -e 'quit app "MacClipbrd"' 2>/dev/null || pkill -x MacClipbrd
+    # Wait for it to exit so `open` doesn't just reactivate the old instance.
+    for _ in $(seq 1 20); do
+        pgrep -x MacClipbrd >/dev/null || break
+        sleep 0.1
+    done
+    pgrep -x MacClipbrd >/dev/null && pkill -9 -x MacClipbrd
+fi
+
 echo
 echo "Done: $APP"
-echo "Run: open $APP"
+echo "Launching $APP…"
+open "$APP"
